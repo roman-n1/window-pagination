@@ -9,7 +9,7 @@ The independent `null-safety` CI job has two layers and runs for every pull requ
 
 The compiler check runs against both modules' JVM production and test compilations with `-PcheckNullTypes`. Their current logic is entirely in common source sets; platform compilation jobs check target compatibility separately. Future platform-only source sets must get equivalent compiler-policy coverage before adding implementation there. Gradle scripts and build tooling receive the lexical check.
 
-Some standard-library helpers widen a lambda return to a nullable type. Use a directly typed `Comparator` instead of a selector returning `Comparable<*>?`, and an explicit anonymous function returning `Unit` when a test callback expects a nullable result.
+Some standard-library helpers widen a lambda return to a nullable type. Use a directly typed `Comparator` with explicit non-null lambda parameter types instead of a selector returning `Comparable<*>?`, and an explicit anonymous function returning `Unit` when a test callback expects a nullable result.
 
 This is a policy on handwritten Kotlin declarations and syntax, not proof that foreign code or platform APIs can never return null at runtime. Keep interop boundaries explicit and review Java/platform types. The compiler checker is tied to the repository's Kotlin version; upgrade it together with its accepting and rejecting compiler fixtures.
 

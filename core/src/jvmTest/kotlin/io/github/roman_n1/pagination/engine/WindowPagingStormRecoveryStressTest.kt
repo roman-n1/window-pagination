@@ -504,7 +504,7 @@ class WindowPagingStormRecoveryStressTest {
     private class DenseDataSource(
         private val totalItems: Int,
     ) : WindowDataSource<StormItem> {
-        override val comparator: Comparator<StormItem> = Comparator { left, right -> right.index.compareTo(left.index) }
+        override val comparator: Comparator<StormItem> = Comparator { left: StormItem, right: StormItem -> right.index.compareTo(left.index) }
 
         override val itemId: (StormItem) -> String = { it.id }
 

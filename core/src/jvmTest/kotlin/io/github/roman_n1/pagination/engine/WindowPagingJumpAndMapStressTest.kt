@@ -686,7 +686,7 @@ class WindowPagingJumpAndMapStressTest {
     private class GatedDataSource(
         private val totalItems: Int,
     ) : WindowDataSource<Item> {
-        override val comparator: Comparator<Item> = Comparator { left, right -> right.index.compareTo(left.index) }
+        override val comparator: Comparator<Item> = Comparator { left: Item, right: Item -> right.index.compareTo(left.index) }
 
         override val itemId: (Item) -> String = { it.id }
 

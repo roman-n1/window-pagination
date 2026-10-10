@@ -716,7 +716,7 @@ private class ModelSource(
     var refreshNewestCalls = 0
         private set
 
-    override val comparator: Comparator<Row> = Comparator { left, right -> right.index.compareTo(left.index) }
+    override val comparator: Comparator<Row> = Comparator { left: Row, right: Row -> right.index.compareTo(left.index) }
 
     override val itemId: (Row) -> String = { it.index.toString() }
 

@@ -84,7 +84,7 @@ class WindowPagerLiveUpdateFailureTest {
 
     /** Начальное окно грузится нормально, а live-подписка сразу падает, как падает Room при SQLITE_BUSY. */
     private class ThrowingObserveDataSource : WindowDataSource<String> {
-        override val comparator: Comparator<String> = Comparator { left, right -> right.toInt().compareTo(left.toInt()) }
+        override val comparator: Comparator<String> = Comparator { left: String, right: String -> right.toInt().compareTo(left.toInt()) }
 
         override val itemId: (String) -> String = { it }
 

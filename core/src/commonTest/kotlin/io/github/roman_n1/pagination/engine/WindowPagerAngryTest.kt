@@ -740,8 +740,8 @@ class WindowPagerAngryTest {
         private val useLiveSnapshots: Boolean = false,
     ) : WindowDataSource<TestItem> {
         override val comparator: Comparator<TestItem> =
-            Comparator<TestItem> { left, right -> right.index.compareTo(left.index) }
-                .then(Comparator { left, right -> right.id.compareTo(left.id) })
+            Comparator<TestItem> { left: TestItem, right: TestItem -> right.index.compareTo(left.index) }
+                .then(Comparator { left: TestItem, right: TestItem -> right.id.compareTo(left.id) })
 
         override val itemId: (TestItem) -> String = { it.id }
 
@@ -862,7 +862,7 @@ class WindowPagerAngryTest {
      * Data source, который возвращает дубликаты в ответе — проверяет что normalize их схлопывает.
      */
     class DuplicatingDataSource : WindowDataSource<TestItem> {
-        override val comparator = Comparator<TestItem> { left, right -> right.index.compareTo(left.index) }
+        override val comparator = Comparator<TestItem> { left: TestItem, right: TestItem -> right.index.compareTo(left.index) }
         override val itemId: (TestItem) -> String = { it.id }
 
         val loadCalls = mutableListOf<LoadParams>()

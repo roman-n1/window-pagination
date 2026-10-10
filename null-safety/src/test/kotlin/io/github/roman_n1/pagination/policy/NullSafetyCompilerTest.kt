@@ -14,6 +14,7 @@ class NullSafetyCompilerTest {
     fun rejectsInferredNullableAndNestedTypes() {
         val cases = listOf(
             "val item = mapOf(1 to 2)[0]",
+            "val compare = Comparator<String> { a, b -> a.length - b.length }",
             "class Box { override fun equals(other: Any?): Boolean = false }",
             "fun item() = listOf(1).find { it == 2 }",
             "fun use() { val item = mapOf(1 to 2)[0]; println(item) }",
@@ -39,6 +40,7 @@ class NullSafetyCompilerTest {
                 data class Item(val id: String) : Focus
             }
             fun <T : Any> identity(value: T): T = value
+            val compare = Comparator<String> { a: String, b: String -> a.length - b.length }
             val item = mapOf(1 to 2).getValue(1)
             val text: String get() = "valid"
             fun use() { val local = identity(1); println(local) }
