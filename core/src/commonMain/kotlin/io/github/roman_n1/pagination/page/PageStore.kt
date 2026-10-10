@@ -37,6 +37,17 @@ class PageStore<K : Any, T : Any>(private val itemId: (T) -> String) {
         PageChange.Applied(snapshot)
     }
 
+    suspend fun editPage(token: PageToken, edit: PageEditor<T>.() -> Unit): PageChange<K, T> {
+        PageEditor<T>().apply(edit).freeze()
+        return PageChange.Rejected(PageRejection.MissingPage(token.pageId))
+    }
+
+    suspend fun replacePage(token: PageToken, source: SourcePage<K, T>): PageChange<K, T> =
+        PageChange.Rejected(PageRejection.PageIdentityChanged(token.pageId, source.id))
+
+    suspend fun reconcilePage(token: PageToken, source: SourcePage<K, T>): PageChange<K, T> =
+        PageChange.Rejected(PageRejection.PageIdentityChanged(token.pageId, source.id))
+
     /** Clear the store and invalidate all pending loads, even when the store was already empty. */
     suspend fun reset(): PageGeneration = mutex.withLock {
         val generation = PageGeneration(mutableState.value.generation.value + 1)
