@@ -17,6 +17,7 @@ internal fun <K : Any, T : Any> retainPages(
     incoming: PageSnapshot<K, T>,
     config: PageCacheConfig,
     accessOrder: Map<PageId, Long>,
+    protectedPages: Set<PageId>,
 ): RetentionResult<K, T> {
     fun capacity(values: List<PageSnapshot<K, T>>): PageRejection.CacheCapacityExceeded =
         PageRejection.CacheCapacityExceeded(
@@ -36,7 +37,7 @@ internal fun <K : Any, T : Any> retainPages(
     val retained = pages.toMutableList()
     val evicted = mutableListOf<PageId>()
     while (!fits(retained)) {
-        val candidates = retained.filter { it.token.pageId != incoming.token.pageId && it.edits.operations.isEmpty() }
+        val candidates = retained.filter { it.token.pageId != incoming.token.pageId && it.token.pageId !in protectedPages && it.edits.operations.isEmpty() }
         if (candidates.isEmpty()) return RetentionResult.Rejected(capacity(retained))
         val victim = candidates.reduce { oldest, candidate ->
             if (accessOrder.getValue(candidate.token.pageId) < accessOrder.getValue(oldest.token.pageId)) candidate else oldest

@@ -50,3 +50,17 @@ Successful registration/change marks a page as recently used. `accessPage(id)` e
 A token also includes a monotonically allocated load `instance`. Reloading an evicted `PageId` starts a new instance even within the same generation. Operations from the previous instance return `PageInstanceChanged`; matching page ID and revision cannot resurrect ownership.
 
 These limits currently cover the shared page kernel. Bounding the existing window facade's live tail, protecting active window pages and reloading evicted windows belong to its subsequent integration, not to this cache API alone.
+
+## Independent cached windows
+
+`store.windows.open(WindowId("history"), WindowSeed.At(key))` creates and selects an unloaded window. A seed is `Newest`, `Around(itemId)` or `At(key)`. Attach an explicitly ordered, nonempty list of loaded page IDs with `attach(windowToken, pageIds)`. An attached empty **source page** is a loaded empty window with valid continuation, distinct from an unloaded window.
+
+`window(id)` and `active()` return typed missing/unloaded/loaded results. A loaded snapshot includes ordered pages, displayed items and the first/last source cursors. Overlapping item IDs use the first occurrence in that explicit page order; no comparator sorts local display edits. Callers attaching pages are responsible for range continuity. The upcoming loader will own that decision.
+
+`activate(id)` switches to a cached range without performing IO and requests restoration of its recorded viewport anchor. `recordAnchor(token, ViewportAnchor.Item(id, offsetPixels))` records geometry without changing range ownership or requesting a scroll. `requestRestore` explicitly asks for restoration; `acknowledgeRestore` consumes it. When a page change removes the anchor, the store chooses the next surviving item in the old displayed order, then the previous one, preserving the pixel offset. No surviving old neighbour clears the anchor. UI code must apply and acknowledge pending restoration; this kernel does not manipulate scroll state.
+
+All page changes and resulting window/anchor changes publish through the **same** store mutex and StateFlow. The active window's pages and every locally edited page are protected from automatic cache eviction. Evicting any page from an inactive range marks the **whole** window unloaded, preserving its seed for reloading rather than displaying a partially cached range with gaps.
+
+`maxWindows` defaults to eight and bounds window metadata. Opening another window evicts the least recently used clean window slot, reporting IDs in `WindowChange.Applied.evictedWindows`. Windows containing local edits are protected; if no slot can be freed, opening rejects atomically. Explicit `close(token)` removes the window metadata and selection while retaining its page cache and edits. `reset(token, seed)` unloads just that window and advances its revision; other windows and the global page generation remain unchanged. Old revision/instance/generation tokens cannot bind into a newer window.
+
+Window metadata APIs do not start source loads or replace the existing `WindowPager` yet. Source loading, atomic edge admission and UI bindings are subsequent integration steps.

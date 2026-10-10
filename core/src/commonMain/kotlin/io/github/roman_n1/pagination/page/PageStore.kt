@@ -18,6 +18,8 @@ class PageStore<K : Any, T : Any>(
     private var nextInstance = 0L
     private val mutableState = MutableStateFlow(PageStoreState<K, T>())
     val state: StateFlow<PageStoreState<K, T>> = mutableState.asStateFlow()
+    val windows: PageWindows<K, T> = PageWindows(read = { state.value }, mutate = ::mutateWindows,
+        itemId = itemId, config = cacheConfig)
 
     fun page(id: PageId): PageLookup<K, T> {
         for (page in state.value.pages) {
@@ -118,15 +120,29 @@ class PageStore<K : Any, T : Any>(
         val pages = current.pages.toMutableList()
         val index = pages.indexOfFirst { it.token.pageId == page.token.pageId }
         if (index < 0) pages.add(page) else pages[index] = page
-        return when (val retention = retainPages(pages.toImmutableList(), page, cacheConfig, accessOrder)) {
+        return when (val retention = retainPages(pages.toImmutableList(), page, cacheConfig, accessOrder, activePageIds(current))) {
             is RetentionResult.Rejected -> PageChange.Rejected(retention.reason)
             is RetentionResult.Retained -> {
+                val reconciled = reconcileWindows(current, retention.pages, itemId)
                 for (id in retention.evicted) accessOrder.remove(id)
                 recordAccess(page.token.pageId)
-                mutableState.value = current.copy(pages = retention.pages)
+                mutableState.value = current.copy(pages = retention.pages, windows = reconciled)
                 PageChange.Applied(page, retention.evicted)
             }
         }
+    }
+
+    private suspend fun mutateWindows(transform: (PageStoreState<K, T>) -> WindowMutation<K, T>): WindowChange<K> = mutex.withLock {
+        val mutation = transform(mutableState.value)
+        val change = mutation.change
+        if (change is WindowChange.Applied) {
+            when (val content = change.window.content) {
+                WindowContent.Unloaded -> Unit
+                is WindowContent.Loaded -> for (id in content.pageIds) recordAccess(id)
+            }
+        }
+        mutableState.value = mutation.state
+        change
     }
 
     private fun recordAccess(id: PageId) {
@@ -137,6 +153,7 @@ class PageStore<K : Any, T : Any>(
     suspend fun reset(): PageGeneration = mutex.withLock {
         val generation = PageGeneration(mutableState.value.generation.value + 1)
         accessOrder.clear()
+        windows.clearRecency()
         mutableState.value = PageStoreState(generation = generation)
         generation
     }

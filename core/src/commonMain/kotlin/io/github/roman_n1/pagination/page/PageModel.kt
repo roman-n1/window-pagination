@@ -37,6 +37,8 @@ data class PageSnapshot<out K : Any, out T : Any>(
 data class PageStoreState<out K : Any, out T : Any>(
     val generation: PageGeneration = PageGeneration(0),
     val pages: ImmutableList<PageSnapshot<K, T>> = persistentListOf(),
+    val windows: ImmutableList<PageWindow<K>> = persistentListOf(),
+    val activeWindow: WindowSelection = WindowSelection.None,
 )
 
 sealed interface PageLookup<out K : Any, out T : Any> {
