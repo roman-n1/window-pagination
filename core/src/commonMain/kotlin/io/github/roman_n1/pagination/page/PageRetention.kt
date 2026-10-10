@@ -38,7 +38,9 @@ internal fun <K : Any, T : Any> retainPages(
     while (!fits(retained)) {
         val candidates = retained.filter { it.token.pageId != incoming.token.pageId && it.edits.operations.isEmpty() }
         if (candidates.isEmpty()) return RetentionResult.Rejected(capacity(retained))
-        val victim = candidates.sortedBy { accessOrder.getValue(it.token.pageId) }.first()
+        val victim = candidates.reduce { oldest, candidate ->
+            if (accessOrder.getValue(candidate.token.pageId) < accessOrder.getValue(oldest.token.pageId)) candidate else oldest
+        }
         retained.remove(victim)
         evicted.add(victim.token.pageId)
     }
