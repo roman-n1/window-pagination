@@ -64,7 +64,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Install Android compile SDK
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;37.0.0"'
-      - run: ./gradlew :core:jsNodeTest :core:wasmJsNodeTest :compose:compileKotlinJs :compose:compileKotlinWasmJs :core:compileAndroidMain :compose:compileAndroidMain --stacktrace
+      - run: ./gradlew :core:jsNodeTest :core:wasmJsNodeTest :compose:compileKotlinJs :compose:compileKotlinWasmJs :core:compileAndroidMain :compose:compileAndroidMain -PcheckNullTypes --stacktrace
 
   native-compile:
     runs-on: macos-latest
@@ -76,6 +76,6 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :core:compileKotlinIosArm64 :core:compileKotlinIosSimulatorArm64 :compose:compileKotlinIosArm64 :compose:compileKotlinIosSimulatorArm64 --stacktrace
+      - run: ./gradlew :core:compileKotlinIosArm64 :core:compileKotlinIosSimulatorArm64 :compose:compileKotlinIosArm64 :compose:compileKotlinIosSimulatorArm64 :core:compileTestKotlinIosSimulatorArm64 -PcheckNullTypes --stacktrace
       - name: Prove inferred nullable Native declarations are rejected
         run: python3 scripts/check_platform_null_types.py ios

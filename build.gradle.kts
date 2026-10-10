@@ -18,9 +18,22 @@ subprojects {
                 isTransitive = false
             }
             dependencies.add(policy.name, project(":null-safety"))
+            val pluginArgument = provider { "-Xplugin=${policy.singleFile.absolutePath}" }
             tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
                 inputs.files(policy)
-                compilerOptions.freeCompilerArgs.add(provider { "-Xplugin=${policy.singleFile.absolutePath}" })
+                compilerOptions.freeCompilerArgs.add(pluginArgument)
+            }
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>().configureEach {
+                inputs.files(policy)
+                compilerOptions.freeCompilerArgs.add(pluginArgument)
+            }
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+                inputs.files(policy)
+                compilerOptions.freeCompilerArgs.add(pluginArgument)
+            }
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().configureEach {
+                inputs.files(policy)
+                compilerOptions.freeCompilerArgs.add(pluginArgument)
             }
         }
     }
