@@ -14,6 +14,7 @@ class NullSafetyCompilerTest {
     fun rejectsInferredNullableAndNestedTypes() {
         val cases = listOf(
             "val item = mapOf(1 to 2)[0]",
+            "class Box { override fun equals(other: Any?): Boolean = false }",
             "fun item() = listOf(1).find { it == 2 }",
             "fun use() { val item = mapOf(1 to 2)[0]; println(item) }",
             "val items: List<String?> = emptyList()",

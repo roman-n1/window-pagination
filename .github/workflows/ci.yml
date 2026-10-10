@@ -58,6 +58,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
       - name: Install Android compile SDK
         run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
       - run: ./gradlew :core:jsNodeTest :core:wasmJsNodeTest :compose:compileKotlinJs :compose:compileKotlinWasmJs :core:compileAndroidMain :compose:compileAndroidMain --stacktrace

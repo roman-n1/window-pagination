@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -42,6 +43,7 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
             file.acceptChildrenVoid(object : IrVisitorVoid() {
                 override fun visitElement(element: IrElement) {
                     // Data-class equals and other compiler-generated code are not handwritten APIs.
+                    if (element is IrDeclaration && element.origin == IrDeclarationOrigin.FAKE_OVERRIDE) return
                     if (element is IrDeclaration && element.origin.isSynthetic &&
                         element.origin != IrDeclarationOrigin.DEFAULT_PROPERTY_ACCESSOR &&
                         element !is IrField
@@ -61,7 +63,9 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                     if (containsNullable(type)) {
                         messages.report(
                             CompilerMessageSeverity.ERROR,
-                            "null-safety: nullable or star-projected declaration type; use an explicit non-null state",
+                            "null-safety: nullable or star-projected type of " +
+                                (if (element is IrDeclarationWithName) element.name.asString() else "declaration") +
+                                "; use an explicit non-null state",
                             CompilerMessageLocation.create(
                                 file.fileEntry.name,
                                 file.fileEntry.getLineNumber(element.startOffset) + 1,

@@ -750,11 +750,11 @@ class WindowPagerAngryTest {
 
         private val snapshotsSink = MutableSharedFlow<List<TestItem>>(replay = 1, extraBufferCapacity = 10)
 
-        var nextLoadError: Presence<Exception> = Presence.Absent
+        internal var nextLoadError: Presence<Exception> = Presence.Absent
         var initialLoadGate: CompletableDeferred<Unit> = CompletableDeferred(Unit)
 
         /** Initial(anchorId=null) вернёт это окно (stale-кэш) + [backgroundReconcileResult]. */
-        var staleInitialWindow: Presence<List<TestItem>> = Presence.Absent
+        internal var staleInitialWindow: Presence<List<TestItem>> = Presence.Absent
         var backgroundReconcileResult: BackgroundReconcile<TestItem> = BackgroundReconcile { ReconcileResult.Unchanged }
 
         suspend fun emitSnapshot(items: List<TestItem>) {

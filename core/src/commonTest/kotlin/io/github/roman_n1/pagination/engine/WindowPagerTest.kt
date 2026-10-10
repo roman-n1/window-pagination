@@ -1004,13 +1004,13 @@ class WindowPagerTest {
         private val snapshotFlow = MutableSharedFlow<List<TestItem>>(extraBufferCapacity = 10)
 
         /** Если не null - следующий вызов load() выбросит это исключение (однократно). */
-        var nextLoadError: Presence<Exception> = Presence.Absent
+        internal var nextLoadError: Presence<Exception> = Presence.Absent
 
         /**
          * Если задан — Initial(anchorId=null) вернёт ЭТО окно (stale-кэш) вместо newest,
          * приложив [backgroundReconcileResult] как отложенную серверную сверку.
          */
-        var staleInitialWindow: Presence<List<TestItem>> = Presence.Absent
+        internal var staleInitialWindow: Presence<List<TestItem>> = Presence.Absent
 
         /** Отложенная сверка, прикладываемая к stale-initial (см. [staleInitialWindow]). */
         var backgroundReconcileResult: BackgroundReconcile<TestItem> = BackgroundReconcile { ReconcileResult.Unchanged }
