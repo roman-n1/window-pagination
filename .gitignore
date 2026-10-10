@@ -1,0 +1,10 @@
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/
+.DS_Store
+kotlin-js-store/
+node_modules/
+__pycache__/
+*.pyc

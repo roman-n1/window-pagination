@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  null-safety:
+    name: null-safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test the syntax policy and scan every Kotlin source
+        run: |
+          python3 -m unittest discover -s scripts/tests
+          python3 scripts/check_null_safety.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test the compiler policy and check resolved JVM types
+        run: ./gradlew :null-safety:test :core:compileTestKotlinJvm :compose:compileTestKotlinJvm -PcheckNullTypes --stacktrace
+
+  jvm-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: xvfb-run -a ./gradlew :core:jvmTest :compose:jvmTest --stacktrace
+
+  web-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android compile SDK
+        run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
+      - run: ./gradlew :core:jsNodeTest :core:wasmJsNodeTest :compose:compileKotlinJs :compose:compileKotlinWasmJs :core:compileAndroidMain :compose:compileAndroidMain --stacktrace
+
+  native-compile:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :core:compileKotlinIosArm64 :core:compileKotlinIosSimulatorArm64 :compose:compileKotlinIosArm64 :compose:compileKotlinIosSimulatorArm64 --stacktrace
