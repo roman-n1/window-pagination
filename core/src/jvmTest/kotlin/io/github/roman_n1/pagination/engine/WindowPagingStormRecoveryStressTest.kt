@@ -3,7 +3,7 @@ package io.github.roman_n1.pagination.engine
 import io.github.roman_n1.pagination.model.*
 import io.github.roman_n1.pagination.engine.PagingScope
 
-import java.util.Collections
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 import kotlin.test.Test
@@ -196,7 +196,7 @@ class WindowPagingStormRecoveryStressTest {
                     .toMutableSet()
             poisoned += POISON_PROBE
             val transformDelays = LongArray(GENERATIONS + 1) { rnd.nextLong(0, MAX_TRANSFORM_DELAY_MS + 1) }
-            val uncaught: MutableList<Throwable> = Collections.synchronizedList(mutableListOf())
+            val uncaught: MutableList<Throwable> = CopyOnWriteArrayList<Throwable>()
             val poisonThrown = AtomicInteger(0)
             val scope =
                 CoroutineScope(
@@ -205,7 +205,7 @@ class WindowPagingStormRecoveryStressTest {
                 )
             val upstream = MutableStateFlow(generationState(0))
             val delegate = FakeWindowController(upstream)
-            val published: MutableList<Int> = Collections.synchronizedList(mutableListOf())
+            val published: MutableList<Int> = CopyOnWriteArrayList<Int>()
 
             val mapped =
                 delegate.mapList(itemId = { it }, scope = PagingScope.Borrowed(scope)) { values ->
@@ -356,7 +356,7 @@ class WindowPagingStormRecoveryStressTest {
                         "зомби-публикация после close - закрытое окно перетёрло бы состояние пересозданного - $diag",
                     )
                     assertFalse(
-                        (mapped as MappedWindowController<*, *>).isOwnedScopeActive(),
+                        (mapped as MappedWindowController<String, String>).isOwnedScopeActive(),
                         "собственный scope жив после close - утечка WP1 на каждый warm-start - $diag",
                     )
                 } finally {

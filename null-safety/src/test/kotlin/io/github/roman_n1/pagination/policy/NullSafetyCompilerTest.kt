@@ -30,6 +30,7 @@ class NullSafetyCompilerTest {
             "fun item() = mapOf(1 to 2)[0] as Int",
             "fun text() = run { mapOf(1 to 2)[0].toString() }",
             "fun use() { listOf(1).forEach { println(mapOf(1 to 2)[it]) } }",
+            "fun use() { val values: MutableList<String> = java.util.Collections.synchronizedList(mutableListOf()); println(values) }",
         )
         for (source in cases) {
             val result = compile(source)
@@ -52,6 +53,7 @@ class NullSafetyCompilerTest {
             fun use() { val local = identity(1); println(local) }
             fun printValue() { println(mapOf(1 to 2).getValue(1)) }
             fun removeKey() { val values = mutableMapOf(1 to 2); values.keys.remove(1) }
+            fun record() { val values: MutableList<String> = java.util.concurrent.CopyOnWriteArrayList<String>(); values += "safe"; println(values) }
         """.trimIndent())
         assertEquals(ExitCode.OK, result.first, result.second)
     }
