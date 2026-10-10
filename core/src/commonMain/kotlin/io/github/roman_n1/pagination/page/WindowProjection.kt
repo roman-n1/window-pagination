@@ -32,14 +32,15 @@ internal fun <T : Any> restoreAnchor(old: ViewportAnchor, previous: List<T>, nex
     if (old !is ViewportAnchor.Item) return ViewportAnchor.None
     val nextIds = next.map(itemId).toSet()
     if (old.id in nextIds) return old
-    val index = previous.indexOfFirst { itemId(it) == old.id }
+    val previousItems = previous.distinctBy(itemId)
+    val index = previousItems.indexOfFirst { itemId(it) == old.id }
     if (index < 0) return ViewportAnchor.None
-    for (position in index + 1 until previous.size) {
-        val id = itemId(previous[position])
+    for (position in index + 1 until previousItems.size) {
+        val id = itemId(previousItems[position])
         if (id in nextIds) return old.copy(id = id)
     }
     for (position in index - 1 downTo 0) {
-        val id = itemId(previous[position])
+        val id = itemId(previousItems[position])
         if (id in nextIds) return old.copy(id = id)
     }
     return ViewportAnchor.None
