@@ -23,13 +23,13 @@ fun platformPolicyProbe() = mapOf("key" to "value")["missing"]
 MARKER = "null-safety: nullable or star-projected type of platformPolicyProbe"
 
 
-def check_backend(root: Path, backend: str) -> bool:
+def check_backend(root: Path, backend: str, wrapper: Path) -> bool:
     source_set, task = BACKENDS[backend]
     probe = root / "core" / "src" / source_set / "kotlin" / "policyprobe" / "PlatformPolicyProbe.kt"
     if probe.exists():
         raise RuntimeError(f"Refusing to overwrite an existing probe: {probe}")
     probe.parent.mkdir(parents=True, exist_ok=True)
-    command = [str(root / "gradlew"), task, "-PcheckNullTypes", "--console=plain"]
+    command = [str(wrapper), "-p", str(root), task, "-PcheckNullTypes", "--console=plain"]
     try:
         for label, code in (("accepting", ACCEPTING), ("rejecting", REJECTING)):
             probe.write_text(code, encoding="utf-8")
@@ -59,12 +59,14 @@ def check_backend(root: Path, backend: str) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("backends", nargs="+", choices=tuple(BACKENDS))
-    arguments = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    parser.add_argument("--gradle-wrapper", type=Path, default=root / "gradlew",
+                        help="Host coordination wrapper when running on a shared machine")
+    arguments = parser.parse_args()
     passed = True
     # Run every requested probe so one missing backend does not hide another.
     for backend in arguments.backends:
-        passed = check_backend(root, backend) and passed
+        passed = check_backend(root, backend, arguments.gradle_wrapper.resolve()) and passed
     return 0 if passed else 1
 
 
