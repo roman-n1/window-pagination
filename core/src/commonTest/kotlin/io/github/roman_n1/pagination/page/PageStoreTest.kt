@@ -56,6 +56,8 @@ class PageStoreTest {
         assertEquals(before, store.state.value)
         assertEquals(PageLookup.Loaded(newPage), store.page(PageId("new")))
         assertEquals(PageLookup.Missing, store.page(PageId("old")))
+        assertEquals(PageGeneration(2), store.reset())
+        assertEquals(PageLookup.Missing, store.page(PageId("new")))
     }
 
     @Test

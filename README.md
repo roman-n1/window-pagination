@@ -18,6 +18,8 @@ Kotlin Multiplatform pagination for a moving window of a live feed. Jump directl
 
 `core` has no Compose, AndroidX Paging, database, networking or application dependencies. `compose` adds the UI binding. Both declare JVM, Android, iOS arm64/simulator arm64, JS and Wasm targets. The `null-safety` module is build tooling only and is not a runtime dependency.
 
+The [source page API](docs/page-api.md) adds generic cursor metadata and independent page ownership as the foundation for editable pages. The window facade will adopt it in a subsequent change.
+
 ## Getting started
 
 Artifacts are not published to Maven Central yet. For a local checkout, use a composite build:
