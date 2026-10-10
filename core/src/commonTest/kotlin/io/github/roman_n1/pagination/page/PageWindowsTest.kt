@@ -195,6 +195,27 @@ class PageWindowsTest {
         assertEquals(WindowSelection.Selected(WindowId("active")), store.state.value.activeWindow)
     }
 
+    @Test
+    fun resettingOneWindowInvalidatesOnlyItsPendingBindings() = runTest {
+        val store = PageStore<String, Row>(Row::id)
+        val page = store.addPage(store.state.value.generation, source("page", Row("a"))).loaded()
+        val first = store.windows.open(WindowId("first"), WindowSeed.Newest).applied().window
+        val attached = store.windows.attach(first.token, persistentListOf(page.token.pageId)).applied().window
+        store.windows.recordAnchor(attached.token, ViewportAnchor.Item("a", 11)).applied()
+        val other = store.windows.open(WindowId("other"), WindowSeed.At("other")).applied().window
+        val reset = store.windows.reset(attached.token, WindowSeed.At("new-position")).applied().window
+        assertEquals(attached.token.copy(revision = attached.token.revision + 1), reset.token)
+        assertEquals(WindowSeed.At("new-position"), reset.seed)
+        assertEquals(WindowContent.Unloaded, reset.content)
+        assertEquals(ViewportAnchor.None, reset.anchor)
+        assertEquals(ViewportAnchor.None, reset.pendingRestore)
+        assertEquals(WindowLookup.Unloaded(other), store.windows.active())
+        assertEquals(WindowChange.Rejected(WindowRejection.RevisionChanged(attached.token, reset.token)),
+            store.windows.attach(attached.token, persistentListOf(page.token.pageId)))
+        assertEquals(PageGeneration(0), store.state.value.generation)
+        assertEquals(PageLookup.Loaded(page), store.page(page.token.pageId))
+    }
+
     private fun <K : Any> WindowChange<K>.applied(): WindowChange.Applied<K> = when (this) {
         is WindowChange.Applied -> this
         is WindowChange.Rejected -> error("Unexpected rejection: $reason")

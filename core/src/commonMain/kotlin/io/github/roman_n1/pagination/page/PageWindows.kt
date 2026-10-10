@@ -12,5 +12,6 @@ class PageWindows<K : Any, T : Any> internal constructor(private val read: () ->
     suspend fun recordAnchor(token: WindowToken, anchor: ViewportAnchor): WindowChange<K> = WindowChange.Rejected(WindowRejection.Missing(token.windowId))
     suspend fun requestRestore(token: WindowToken, anchor: ViewportAnchor): WindowChange<K> = WindowChange.Rejected(WindowRejection.Missing(token.windowId))
     suspend fun acknowledgeRestore(token: WindowToken): WindowChange<K> = WindowChange.Rejected(WindowRejection.Missing(token.windowId))
+    suspend fun reset(token: WindowToken, seed: WindowSeed<K>): WindowChange<K> = WindowChange.Rejected(WindowRejection.Missing(token.windowId))
     suspend fun close(token: WindowToken): WindowChange<K> = WindowChange.Rejected(WindowRejection.Missing(token.windowId))
 }
