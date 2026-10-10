@@ -50,7 +50,7 @@ class PageWindows<K : Any, T : Any> internal constructor(
         }
         val window = PageWindow(WindowToken(current.generation, id, 0, nextInstance), seed)
         windows.add(window)
-        for (victim in evicted) accessOrder.remove(victim)
+        for (victim in evicted) accessOrder.keys.remove(victim)
         touch(id)
         nextInstance++
         WindowMutation(current.copy(windows = windows.toImmutableList(), activeWindow = WindowSelection.Selected(id)),
@@ -109,7 +109,7 @@ class PageWindows<K : Any, T : Any> internal constructor(
     suspend fun close(token: WindowToken): WindowChange<K> = change(token) { current, index, window ->
         val windows = current.windows.toMutableList().apply { removeAt(index) }
         val selection = if (current.activeWindow == WindowSelection.Selected(token.windowId)) WindowSelection.None else current.activeWindow
-        accessOrder.remove(window.token.windowId)
+        accessOrder.keys.remove(window.token.windowId)
         WindowMutation(current.copy(windows = windows.toImmutableList(), activeWindow = selection), WindowChange.Closed(token.windowId))
     }
 

@@ -190,7 +190,7 @@ class WindowPager<T : Any>(
     private suspend fun bootstrap() {
         mutex.withLock {
             if (_state.value.loadStateBottom == LoadState.Loading) return
-            edgeRequests.remove(WindowLoadDirection.BOTTOM)
+            edgeRequests.keys.remove(WindowLoadDirection.BOTTOM)
             _state.update {
                 it.copy(loadStateBottom = LoadState.Loading)
             }
@@ -662,7 +662,7 @@ class WindowPager<T : Any>(
                         }
                         true
                     } else {
-                        edgeRequests.remove(WindowLoadDirection.BOTTOM)
+                        edgeRequests.keys.remove(WindowLoadDirection.BOTTOM)
                         _state.update {
                             it.copy(
                                 loadStateBottom = LoadState.Loading,
@@ -725,7 +725,7 @@ class WindowPager<T : Any>(
                     if (current.loadStateBottom == LoadState.Loading) {
                         false
                     } else {
-                        edgeRequests.remove(WindowLoadDirection.BOTTOM)
+                        edgeRequests.keys.remove(WindowLoadDirection.BOTTOM)
                         _state.update { it.copy(loadStateBottom = LoadState.Loading) }
                         true
                     }
@@ -844,7 +844,7 @@ class WindowPager<T : Any>(
         request: Any,
     ): Boolean {
         if (!edgeRequests.containsKey(direction) || edgeRequests.getValue(direction) !== request) return false
-        edgeRequests.remove(direction)
+        edgeRequests.keys.remove(direction)
         return true
     }
 

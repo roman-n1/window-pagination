@@ -18,6 +18,9 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
+import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
@@ -56,6 +59,12 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                             is IrTypeParameter -> element.superTypes.forEach { checkType(it, element) }
                         }
                     }
+                    // Widening a non-null argument to a dependency's nullable input is compiler
+                    // adaptation, not a nullable source result. Inspect its children nonetheless.
+                    val implicitCast = element is IrTypeOperatorCall && element.operator == IrTypeOperator.IMPLICIT_CAST
+                    if (element is IrExpression && element.startOffset >= 0 && !implicitCast) {
+                        checkType(element.type, element)
+                    }
                     element.acceptChildrenVoid(this)
                 }
 
@@ -64,7 +73,7 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                         messages.report(
                             CompilerMessageSeverity.ERROR,
                             "null-safety: nullable or star-projected type of " +
-                                (if (element is IrDeclarationWithName) element.name.asString() else "declaration") +
+                                (if (element is IrDeclarationWithName) element.name.asString() else "expression") +
                                 "; use an explicit non-null state",
                             CompilerMessageLocation.create(
                                 file.fileEntry.name,
