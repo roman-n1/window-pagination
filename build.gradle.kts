@@ -28,7 +28,11 @@ val policyNative = tasks.register("checkNullTypesNative") {
 subprojects {
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
         val jvmAndAndroidTasks = tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>()
-        val webTasks = tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>()
+        // Binary link tasks inherit the compile type but have no new source declarations.
+        // Selecting both development and production links creates overlapping output graphs.
+        val webTasks = tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>().matching {
+            it !is org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
+        }
         val nativeTasks = tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>()
         val metadataTasks = tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>()
         policyJvmAndAndroid.configure { dependsOn(jvmAndAndroidTasks) }
@@ -44,7 +48,7 @@ subprojects {
                 inputs.files(policy)
                 compilerOptions.freeCompilerArgs.add(pluginArgument)
             }
-            tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>().configureEach {
+            webTasks.configureEach {
                 inputs.files(policy)
                 compilerOptions.freeCompilerArgs.add(pluginArgument)
             }
