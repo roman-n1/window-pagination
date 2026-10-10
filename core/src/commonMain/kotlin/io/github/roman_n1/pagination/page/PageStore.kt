@@ -124,7 +124,7 @@ class PageStore<K : Any, T : Any>(
             is RetentionResult.Rejected -> PageChange.Rejected(retention.reason)
             is RetentionResult.Retained -> {
                 val reconciled = reconcileWindows(current, retention.pages, itemId)
-                for (id in retention.evicted) accessOrder.remove(id)
+                for (id in retention.evicted) accessOrder.keys.remove(id)
                 recordAccess(page.token.pageId)
                 mutableState.value = current.copy(pages = retention.pages, windows = reconciled)
                 PageChange.Applied(page, retention.evicted)

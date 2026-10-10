@@ -3,10 +3,9 @@ package io.github.roman_n1.pagination.engine
 import io.github.roman_n1.pagination.model.*
 import io.github.roman_n1.pagination.engine.PagingScope
 
-import java.util.Collections
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 import kotlin.random.Random
 import kotlin.test.Ignore
@@ -110,8 +109,8 @@ class WindowPagingJumpAndMapStressTest {
                 val pager = stressPager(ds, scope)
 
                 val plan = ops.joinToString(",") { it.label }
-                val executed: MutableList<String> = Collections.synchronizedList(mutableListOf())
-                val violation = AtomicReference<Presence<String>>(Presence.Absent)
+                val executed: MutableList<String> = CopyOnWriteArrayList<String>()
+                val violation = MutableStateFlow<Presence<String>>(Presence.Absent)
 
                 try {
                     // Ждём именно СОБЫТИЕ «bootstrap собрал окно», а не «снимок перестал меняться»:
@@ -142,7 +141,7 @@ class WindowPagingJumpAndMapStressTest {
                     pager.settle()
                     val state = pager.state.value
                     recordViolation(violation, state, ds, iteration, plan, executed, "settle")
-                    assertEquals(Presence.Absent, violation.get(), "инвариант окна нарушен")
+                    assertEquals(Presence.Absent, violation.value, "инвариант окна нарушен")
 
                     assertWindowInvariants(state, ds, diagnostics(iteration, plan, executed, "final"))
                 } finally {
@@ -321,7 +320,7 @@ class WindowPagingJumpAndMapStressTest {
             val delegate = FakeWindowController(upstream)
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             // Публикует transform на Dispatchers.Default, читает тест-поток → только потокобезопасный список.
-            val published: MutableList<Int> = Collections.synchronizedList(mutableListOf())
+            val published: MutableList<Int> = CopyOnWriteArrayList<Int>()
 
             val mapped =
                 delegate.map(itemId = { it }, scope = PagingScope.Borrowed(scope)) { value ->
@@ -395,7 +394,7 @@ class WindowPagingJumpAndMapStressTest {
         runBlocking {
             val gate = CompletableDeferred<Unit>()
             val started = AtomicBoolean(false)
-            val completed: MutableList<Int> = Collections.synchronizedList(mutableListOf())
+            val completed: MutableList<Int> = CopyOnWriteArrayList<Int>()
             val inFlight = AtomicInteger(0)
             val maxInFlight = AtomicInteger(0)
 
@@ -596,7 +595,7 @@ class WindowPagingJumpAndMapStressTest {
 
     /** Фиксирует ПЕРВОЕ нарушение: последующие уже вторичны и только зашумляют сообщение. */
     private fun recordViolation(
-        sink: AtomicReference<Presence<String>>,
+        sink: MutableStateFlow<Presence<String>>,
         state: WindowState<Item>,
         ds: GatedDataSource,
         iteration: Int,
@@ -605,7 +604,7 @@ class WindowPagingJumpAndMapStressTest {
         stage: String,
     ) {
         val items = state.items
-        // toList() под капотом идёт через synchronized toArray(), поэтому лог воркеров читать безопасно.
+        // CopyOnWriteArrayList даёт неизменяемый снимок чтения при конкурентных записях воркеров.
         val diag = diagnostics(iteration, plan, executed.toList(), stage)
         val problem: String =
             when {
