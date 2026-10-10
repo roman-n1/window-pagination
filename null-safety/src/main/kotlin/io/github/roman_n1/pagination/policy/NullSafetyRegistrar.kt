@@ -68,7 +68,11 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                     // A function literal is never null. Its source parameters, return type and
                     // body are checked separately; Compose adds nullable ABI parameters to its
                     // wrapper type after resolution, with no handwritten declaration.
-                    if (element is IrExpression && element !is IrFunctionExpression && element.startOffset >= 0 && !implicitCast) {
+                    // Compose reads its generated Composer parameter at copied source offsets.
+                    // Its declaration has no source location, just like the generated parameters
+                    // already excluded above. Handwritten parameter reads remain checked.
+                    val generatedValue = element is IrGetValue && element.symbol.owner.startOffset < 0
+                    if (element is IrExpression && element !is IrFunctionExpression && element.startOffset >= 0 && !implicitCast && !generatedValue) {
                         checkType(element.type, element)
                     }
                     element.acceptChildrenVoid(this)
@@ -80,9 +84,7 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                             CompilerMessageSeverity.ERROR,
                             "null-safety: nullable or star-projected type of " +
                                 (if (element is IrDeclarationWithName) element.name.asString() else "expression") +
-                                " (${element.javaClass.simpleName}; ${type.render()}" +
-                                (if (element is IrGetValue) "; owner=${element.symbol.owner.name}, origin=${element.symbol.owner.origin}, offset=${element.symbol.owner.startOffset}" else "") +
-                                "); use an explicit non-null state",
+                                " (${type.render()}); use an explicit non-null state",
                             CompilerMessageLocation.create(
                                 file.fileEntry.name,
                                 file.fileEntry.getLineNumber(element.startOffset) + 1,

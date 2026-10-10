@@ -28,6 +28,8 @@ class NullSafetyCompilerTest {
             "fun use() { println(mapOf(1 to 2)[0]) }",
             "fun use() { val values = mutableMapOf(1 to 2); values.remove(1) }",
             "fun item() = mapOf(1 to 2)[0] as Int",
+            "fun text() = run { mapOf(1 to 2)[0].toString() }",
+            "fun use() { listOf(1).forEach { println(mapOf(1 to 2)[it]) } }",
         )
         for (source in cases) {
             val result = compile(source)
