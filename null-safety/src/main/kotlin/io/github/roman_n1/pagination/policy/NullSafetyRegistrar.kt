@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -62,7 +63,10 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                     // Widening a non-null argument to a dependency's nullable input is compiler
                     // adaptation, not a nullable source result. Inspect its children nonetheless.
                     val implicitCast = element is IrTypeOperatorCall && element.operator == IrTypeOperator.IMPLICIT_CAST
-                    if (element is IrExpression && element.startOffset >= 0 && !implicitCast) {
+                    // A function literal is never null. Its source parameters, return type and
+                    // body are checked separately; Compose adds nullable ABI parameters to its
+                    // wrapper type after resolution, with no handwritten declaration.
+                    if (element is IrExpression && element !is IrFunctionExpression && element.startOffset >= 0 && !implicitCast) {
                         checkType(element.type, element)
                     }
                     element.acceptChildrenVoid(this)
@@ -74,7 +78,7 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                             CompilerMessageSeverity.ERROR,
                             "null-safety: nullable or star-projected type of " +
                                 (if (element is IrDeclarationWithName) element.name.asString() else "expression") +
-                                "; use an explicit non-null state",
+                                " (${element.javaClass.simpleName}; $type); use an explicit non-null state",
                             CompilerMessageLocation.create(
                                 file.fileEntry.name,
                                 file.fileEntry.getLineNumber(element.startOffset) + 1,
