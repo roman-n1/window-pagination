@@ -13,6 +13,9 @@ class PageStore<K : Any, T : Any>(
     private val cacheConfig: PageCacheConfig = PageCacheConfig(),
 ) {
     private val mutex = Mutex()
+    private val accessOrder = mutableMapOf<PageId, Long>()
+    private var accessClock = 0L
+    private var nextInstance = 0L
     private val mutableState = MutableStateFlow(PageStoreState<K, T>())
     val state: StateFlow<PageStoreState<K, T>> = mutableState.asStateFlow()
 
@@ -24,7 +27,11 @@ class PageStore<K : Any, T : Any>(
     }
 
     /** Explicitly mark a cached page as recently used. Missing lookups have no side effects. */
-    suspend fun accessPage(id: PageId): PageLookup<K, T> = page(id)
+    suspend fun accessPage(id: PageId): PageLookup<K, T> = mutex.withLock {
+        val lookup = page(id)
+        if (lookup is PageLookup.Loaded) recordAccess(id)
+        lookup
+    }
 
     /** Capture generation before loading; a reset makes that response ineligible for registration. */
     suspend fun addPage(generation: PageGeneration, page: SourcePage<K, T>): PageChange<K, T> = mutex.withLock {
@@ -37,9 +44,10 @@ class PageStore<K : Any, T : Any>(
         }
         val duplicates = duplicateIds(page.items, itemId)
         if (duplicates.isNotEmpty()) return@withLock PageChange.Rejected(PageRejection.DuplicateItems(duplicates))
-        val snapshot = PageSnapshot(PageToken(generation, page.id, 0), page, page.items)
-        mutableState.value = current.copy(pages = (current.pages + snapshot).toImmutableList())
-        PageChange.Applied(snapshot)
+        val snapshot = PageSnapshot(PageToken(generation, page.id, 0, instance = nextInstance), page, page.items)
+        val result = commitPage(current, snapshot)
+        if (result is PageChange.Applied) nextInstance++
+        result
     }
 
     suspend fun editPage(token: PageToken, edit: PageEditor<T>.() -> Unit): PageChange<K, T> {
@@ -98,19 +106,37 @@ class PageStore<K : Any, T : Any>(
         val index = current.pages.indexOfFirst { it.token.pageId == token.pageId }
         if (index < 0) return@withLock PageChange.Rejected(PageRejection.MissingPage(token.pageId))
         val page = current.pages[index]
+        if (token.instance != page.token.instance) {
+            return@withLock PageChange.Rejected(PageRejection.PageInstanceChanged(token, page.token))
+        }
         if (token != page.token) return@withLock PageChange.Rejected(PageRejection.RevisionChanged(token, page.token))
         val result = change(page)
-        if (result is PageChange.Applied) {
-            val pages = current.pages.toMutableList()
-            pages[index] = result.page
-            mutableState.value = current.copy(pages = pages.toImmutableList())
+        if (result is PageChange.Applied) commitPage(current, result.page) else result
+    }
+
+    private fun commitPage(current: PageStoreState<K, T>, page: PageSnapshot<K, T>): PageChange<K, T> {
+        val pages = current.pages.toMutableList()
+        val index = pages.indexOfFirst { it.token.pageId == page.token.pageId }
+        if (index < 0) pages.add(page) else pages[index] = page
+        return when (val retention = retainPages(pages.toImmutableList(), page, cacheConfig, accessOrder)) {
+            is RetentionResult.Rejected -> PageChange.Rejected(retention.reason)
+            is RetentionResult.Retained -> {
+                for (id in retention.evicted) accessOrder.remove(id)
+                recordAccess(page.token.pageId)
+                mutableState.value = current.copy(pages = retention.pages)
+                PageChange.Applied(page, retention.evicted)
+            }
         }
-        result
+    }
+
+    private fun recordAccess(id: PageId) {
+        accessOrder[id] = accessClock++
     }
 
     /** Clear the store and invalidate all pending loads, even when the store was already empty. */
     suspend fun reset(): PageGeneration = mutex.withLock {
         val generation = PageGeneration(mutableState.value.generation.value + 1)
+        accessOrder.clear()
         mutableState.value = PageStoreState(generation = generation)
         generation
     }

@@ -38,3 +38,15 @@ A failed operation rejects the whole transaction as a typed `PageRejection`, pre
 All three operations validate generation, page existence and revision while holding the store mutex. A source response must use the token captured **before** the load: a response completing after another edit/refresh receives `RevisionChanged`, and a response after `reset()` receives `GenerationChanged`. Capture a fresh token to retry after resolving the conflict. Different pages can be changed independently.
 
 Scroll anchor fallback and applying these transactions through `WindowPager` are subsequent integration steps; the current page kernel does not own viewport or source subscriptions.
+
+## Bounded page cache
+
+`PageCacheConfig(maxPages = 64, maxItems = 600, maxEditUnitsPerPage = 1200)` bounds retained source items and displayed items separately, including empty pages and local edit payloads. A replacement operation still consumes journal budget even if a later operation hides its items. These are reference/count budgets, not byte-size guarantees for arbitrary user models or cursor objects.
+
+Registration, edits and source updates admit their complete result atomically. If necessary, they evict the least recently used **clean** pages and report IDs in `PageChange.Applied.evictedPages`. A page with local edits is protected from automatic eviction. The incoming/updated page is protected as well. If protected pages or a single oversized page cannot fit, `CacheCapacityExceeded` leaves all previous snapshots intact. Oversized journals return `EditCapacityExceeded`. Explicit source replacement clears the journal and releases that protection.
+
+Successful registration/change marks a page as recently used. `accessPage(id)` explicitly marks access; plain `page(id)` is a read-only lookup and does not affect eviction order. The recency table only retains loaded pages. Empty transactions can mark access without publishing a new snapshot or revision.
+
+A token also includes a monotonically allocated load `instance`. Reloading an evicted `PageId` starts a new instance even within the same generation. Operations from the previous instance return `PageInstanceChanged`; matching page ID and revision cannot resurrect ownership.
+
+These limits currently cover the shared page kernel. Bounding the existing window facade's live tail, protecting active window pages and reloading evicted windows belong to its subsequent integration, not to this cache API alone.
