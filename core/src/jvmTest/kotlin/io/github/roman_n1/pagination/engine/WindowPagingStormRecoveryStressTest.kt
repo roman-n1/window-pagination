@@ -240,7 +240,7 @@ class WindowPagingStormRecoveryStressTest {
                 assertTrue(
                     awaitCondition { mapped.state.value.pendingFocus == Focus.Item("g$GENERATIONS") },
                     "поток состояний не сошёлся к финальному входу после отказов - " +
-                        "focus=${mapped.state.value.pendingFocus} uncaught=${uncaught.map { it.message }} - seed=$SEED",
+                        "focus=${mapped.state.value.pendingFocus} uncaught=${uncaught.map { it.toString() }} - seed=$SEED",
                 )
                 awaitCondition { published.isNotEmpty() && published.last() == GENERATIONS }
 
@@ -253,7 +253,7 @@ class WindowPagingStormRecoveryStressTest {
                 )
                 assertEquals(
                     emptyList(),
-                    uncaught.map { it.message },
+                    uncaught.map { it.toString() },
                     "исключение transform ушло за пределы контроллера - на Android это краш процесса - $diag",
                 )
                 assertEquals(
@@ -504,7 +504,7 @@ class WindowPagingStormRecoveryStressTest {
     private class DenseDataSource(
         private val totalItems: Int,
     ) : WindowDataSource<StormItem> {
-        override val comparator: Comparator<StormItem> = compareByDescending { it.index }
+        override val comparator: Comparator<StormItem> = Comparator { left, right -> right.index.compareTo(left.index) }
 
         override val itemId: (StormItem) -> String = { it.id }
 

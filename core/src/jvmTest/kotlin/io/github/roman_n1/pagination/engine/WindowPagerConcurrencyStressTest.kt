@@ -147,7 +147,7 @@ class WindowPagerConcurrencyStressTest {
     }
 
     private class AnchorRaceDataSource : WindowDataSource<WindowPagerAngryTest.TestItem> {
-        override val comparator = compareByDescending<WindowPagerAngryTest.TestItem> { it.index }
+        override val comparator = Comparator<WindowPagerAngryTest.TestItem> { left, right -> right.index.compareTo(left.index) }
         override val itemId: (WindowPagerAngryTest.TestItem) -> String = { it.id }
 
         override suspend fun load(params: LoadParams) =

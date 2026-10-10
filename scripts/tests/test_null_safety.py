@@ -42,7 +42,7 @@ val ordinary = "null-safe"
         self.assertEqual([], violations('sealed interface Focus { data object None : Focus }'))
 
     def test_nullable_producers_and_assertions(self):
-        for source in ('items.firstOrNull()', 'items.singleOrNull()', 'requireNotNull(x)', 'checkNotNull(x)', 'items.`firstOrNull`()'):
+        for source in ('items.firstOrNull()', 'items.singleOrNull()', 'requireNotNull(x)', 'checkNotNull(x)', 'assertNotNull(x)', 'items.`firstOrNull`()'):
             with self.subTest(source=source):
                 self.assertTrue(violations(source))
 

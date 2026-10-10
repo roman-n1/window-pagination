@@ -282,7 +282,7 @@ class WindowPagerAdversarialTest {
     ): LoadState = if (direction == WindowIntent.LoadTop) pager.state.value.loadStateTop else pager.state.value.loadStateBottom
 
     private class GatedSource : WindowDataSource<Int> {
-        override val comparator: Comparator<Int> = compareByDescending { it }
+        override val comparator: Comparator<Int> = reverseOrder()
         override val itemId: (Int) -> String = Int::toString
         var pauseInitial: Presence<CompletableDeferred<LoadResult<Int>>> = Presence.Absent
         var pauseAround: Presence<CompletableDeferred<LoadResult<Int>>> = Presence.Absent

@@ -505,7 +505,7 @@ class WindowPagingJumpAndMapStressTest {
                 advanceUntilIdle()
                 assertEquals(
                     emptyList(),
-                    uncaught.map { it.message },
+                    uncaught.map { it.toString() },
                     "исключение transform ушло за пределы контроллера - на Android это краш процесса",
                 )
 
@@ -686,7 +686,7 @@ class WindowPagingJumpAndMapStressTest {
     private class GatedDataSource(
         private val totalItems: Int,
     ) : WindowDataSource<Item> {
-        override val comparator: Comparator<Item> = compareByDescending { it.index }
+        override val comparator: Comparator<Item> = Comparator { left, right -> right.index.compareTo(left.index) }
 
         override val itemId: (Item) -> String = { it.id }
 

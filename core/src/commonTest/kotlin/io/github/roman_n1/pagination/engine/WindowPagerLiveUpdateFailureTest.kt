@@ -50,7 +50,7 @@ class WindowPagerLiveUpdateFailureTest {
             try {
                 advanceUntilIdle()
 
-                assertEquals(emptyList(), uncaught.map { it.message })
+                assertEquals(emptyList(), uncaught.map { it.toString() })
                 assertEquals(listOf("3", "2", "1"), pager.state.value.items)
             } finally {
                 scope.cancel()
@@ -84,7 +84,7 @@ class WindowPagerLiveUpdateFailureTest {
 
     /** Начальное окно грузится нормально, а live-подписка сразу падает, как падает Room при SQLITE_BUSY. */
     private class ThrowingObserveDataSource : WindowDataSource<String> {
-        override val comparator: Comparator<String> = compareByDescending { it.toInt() }
+        override val comparator: Comparator<String> = Comparator { left, right -> right.toInt().compareTo(left.toInt()) }
 
         override val itemId: (String) -> String = { it }
 

@@ -54,7 +54,7 @@ def violations(source):
             elif source[i] == '`':
                 end = source.find('`', i + 1)
                 word = source[i + 1:end]
-                if word.endswith('OrNull') or word in ('requireNotNull', 'checkNotNull'):
+                if word.endswith('OrNull') or word in ('requireNotNull', 'checkNotNull', 'assertNotNull'):
                     report(i, 'nullable producer/assertion: ' + word)
                 i = n if end < 0 else end + 1
             elif source[i] == '{':
@@ -79,7 +79,7 @@ def violations(source):
                 word = source[start:i]
                 if word == 'null':
                     report(start, 'null literal')
-                elif word.endswith('OrNull') or word in ('requireNotNull', 'checkNotNull'):
+                elif word.endswith('OrNull') or word in ('requireNotNull', 'checkNotNull', 'assertNotNull'):
                     report(start, 'nullable producer/assertion: ' + word)
             else:
                 i += 1

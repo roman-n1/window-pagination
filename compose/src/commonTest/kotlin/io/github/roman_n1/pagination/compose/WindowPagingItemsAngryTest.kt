@@ -37,7 +37,7 @@ class WindowPagingItemsAngryTest {
                 controller = controller,
                 prefetchDistance = 2,
             )
-        assertFailsWith<IndexOutOfBoundsException> { pagingItems[0] }
+        assertFailsWith<IndexOutOfBoundsException>(block = fun() { pagingItems[0] })
     }
 
     @Test

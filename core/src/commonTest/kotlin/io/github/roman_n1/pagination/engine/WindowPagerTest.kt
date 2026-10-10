@@ -988,7 +988,8 @@ class WindowPagerTest {
         private val canonicalIdFor: (TestItem) -> String = { it.id },
     ) : WindowDataSource<TestItem> {
         override val comparator: Comparator<TestItem> =
-            compareByDescending<TestItem> { it.index }.thenByDescending { it.id }
+            Comparator<TestItem> { left, right -> right.index.compareTo(left.index) }
+                .then(Comparator { left, right -> right.id.compareTo(left.id) })
 
         override val itemId: (TestItem) -> String = { it.id }
 

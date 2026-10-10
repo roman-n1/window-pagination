@@ -110,7 +110,7 @@ class PagingOwnedScopeTest {
         }
 
     private object EmptyWindowDataSource : WindowDataSource<String> {
-        override val comparator: Comparator<String> = compareBy { it }
+        override val comparator: Comparator<String> = naturalOrder()
         override val itemId: (String) -> String = { it }
 
         override suspend fun load(params: LoadParams): LoadResult<String> = LoadResult(items = emptyList(), hasMore = false)
