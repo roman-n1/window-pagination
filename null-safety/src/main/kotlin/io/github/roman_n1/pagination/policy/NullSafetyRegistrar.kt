@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.isNullable
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 
@@ -78,7 +80,9 @@ private class NullSafetyExtension(private val messages: MessageCollector) : IrGe
                             CompilerMessageSeverity.ERROR,
                             "null-safety: nullable or star-projected type of " +
                                 (if (element is IrDeclarationWithName) element.name.asString() else "expression") +
-                                " (${element.javaClass.simpleName}; $type); use an explicit non-null state",
+                                " (${element.javaClass.simpleName}; ${type.render()}" +
+                                (if (element is IrGetValue) "; owner=${element.symbol.owner.name}, origin=${element.symbol.owner.origin}, offset=${element.symbol.owner.startOffset}" else "") +
+                                "); use an explicit non-null state",
                             CompilerMessageLocation.create(
                                 file.fileEntry.name,
                                 file.fileEntry.getLineNumber(element.startOffset) + 1,
