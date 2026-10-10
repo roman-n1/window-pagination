@@ -12,7 +12,12 @@ sealed interface Cursor<out K : Any> {
 
 data class PageId(val value: String)
 data class PageGeneration(val value: Long)
-data class PageToken(val generation: PageGeneration, val pageId: PageId, val revision: Long)
+data class PageToken(
+    val generation: PageGeneration,
+    val pageId: PageId,
+    val revision: Long,
+    val instance: Long = 0,
+)
 
 /** An empty page can still have before/after continuation cursors. */
 data class SourcePage<out K : Any, out T : Any>(
@@ -40,7 +45,10 @@ sealed interface PageLookup<out K : Any, out T : Any> {
 }
 
 sealed interface PageChange<out K : Any, out T : Any> {
-    data class Applied<K : Any, T : Any>(val page: PageSnapshot<K, T>) : PageChange<K, T>
+    data class Applied<K : Any, T : Any>(
+        val page: PageSnapshot<K, T>,
+        val evictedPages: ImmutableList<PageId> = persistentListOf(),
+    ) : PageChange<K, T>
     data class Rejected(val reason: PageRejection) : PageChange<Nothing, Nothing>
 }
 
@@ -48,6 +56,15 @@ sealed interface PageRejection {
     data class GenerationChanged(val expected: PageGeneration, val actual: PageGeneration) : PageRejection
     data class PageAlreadyLoaded(val pageId: PageId) : PageRejection
     data class DuplicateItems(val ids: ImmutableSet<String>) : PageRejection
+    data class CacheCapacityExceeded(
+        val requiredPages: Int,
+        val requiredSourceItems: Long,
+        val requiredDisplayItems: Long,
+        val maxPages: Int,
+        val maxItems: Int,
+    ) : PageRejection
+    data class EditCapacityExceeded(val requiredUnits: Long, val maxUnits: Int) : PageRejection
+    data class PageInstanceChanged(val expected: PageToken, val actual: PageToken) : PageRejection
     data class MissingPage(val pageId: PageId) : PageRejection
     data class RevisionChanged(val expected: PageToken, val actual: PageToken) : PageRejection
     data class PageIdentityChanged(val expected: PageId, val actual: PageId) : PageRejection

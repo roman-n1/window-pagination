@@ -8,7 +8,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /** Page ownership and source metadata shared by the window engine and page transactions. */
-class PageStore<K : Any, T : Any>(private val itemId: (T) -> String) {
+class PageStore<K : Any, T : Any>(
+    private val itemId: (T) -> String,
+    private val cacheConfig: PageCacheConfig = PageCacheConfig(),
+) {
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow(PageStoreState<K, T>())
     val state: StateFlow<PageStoreState<K, T>> = mutableState.asStateFlow()
@@ -19,6 +22,9 @@ class PageStore<K : Any, T : Any>(private val itemId: (T) -> String) {
         }
         return PageLookup.Missing
     }
+
+    /** Explicitly mark a cached page as recently used. Missing lookups have no side effects. */
+    suspend fun accessPage(id: PageId): PageLookup<K, T> = page(id)
 
     /** Capture generation before loading; a reset makes that response ineligible for registration. */
     suspend fun addPage(generation: PageGeneration, page: SourcePage<K, T>): PageChange<K, T> = mutex.withLock {
