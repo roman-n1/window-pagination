@@ -196,6 +196,20 @@ class PageWindowsTest {
     }
 
     @Test
+    fun anchorFallbackUsesDeduplicatedDisplayOrderAcrossOverlappingPages() = runTest {
+        val store = PageStore<String, Row>(Row::id)
+        val first = store.addPage(store.state.value.generation, source("first", Row("a"), Row("b"))).loaded()
+        val second = store.addPage(store.state.value.generation, source("second", Row("a"), Row("c"))).loaded()
+        val opened = store.windows.open(WindowId("window"), WindowSeed.Newest).applied().window
+        val attached = store.windows.attach(opened.token, persistentListOf(first.token.pageId, second.token.pageId)).applied().window
+        store.windows.recordAnchor(attached.token, ViewportAnchor.Item("b", 6)).applied()
+        store.editPage(first.token) { remove("b") }.loaded()
+        assertEquals(persistentListOf(Row("a"), Row("c")), store.windows.active().loaded().items)
+        assertEquals(ViewportAnchor.Item("c", 6), store.windows.active().loaded().window.anchor)
+        assertEquals(ViewportAnchor.Item("c", 6), store.windows.active().loaded().window.pendingRestore)
+    }
+
+    @Test
     fun resettingOneWindowInvalidatesOnlyItsPendingBindings() = runTest {
         val store = PageStore<String, Row>(Row::id)
         val page = store.addPage(store.state.value.generation, source("page", Row("a"))).loaded()

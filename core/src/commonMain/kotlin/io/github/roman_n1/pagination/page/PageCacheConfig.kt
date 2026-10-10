@@ -8,6 +8,7 @@ data class PageCacheConfig(
     val maxWindows: Int = 8,
 ) {
     init {
+        require(maxWindows > 0) { "maxWindows must be positive" }
         require(maxPages > 0) { "maxPages must be positive" }
         require(maxItems > 0) { "maxItems must be positive" }
         require(maxEditUnitsPerPage >= 0) { "maxEditUnitsPerPage must not be negative" }
