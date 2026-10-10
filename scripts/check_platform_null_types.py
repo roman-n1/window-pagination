@@ -20,6 +20,10 @@ fun platformPolicyProbe() = mapOf("key" to "value").getValue("key")
 REJECTING = '''package policyprobe
 fun platformPolicyProbe() = mapOf("key" to "value")["missing"]
 '''
+REJECTING_EXPRESSION = '''package policyprobe
+fun platformPolicyProbe() = mapOf("key" to "value")["missing"].toString()
+'''
+EXPRESSION_MARKER = "null-safety: nullable or star-projected type of expression"
 MARKER = "null-safety: nullable or star-projected type of platformPolicyProbe"
 
 
@@ -31,7 +35,9 @@ def check_backend(root: Path, backend: str, wrapper: Path) -> bool:
     probe.parent.mkdir(parents=True, exist_ok=True)
     command = [str(wrapper), "-p", str(root), task, "-PcheckNullTypes", "--console=plain"]
     try:
-        for label, code in (("accepting", ACCEPTING), ("rejecting", REJECTING)):
+        for label, code, marker in (("accepting", ACCEPTING, MARKER),
+                                    ("rejecting-declaration", REJECTING, MARKER),
+                                    ("rejecting-expression", REJECTING_EXPRESSION, EXPRESSION_MARKER)):
             probe.write_text(code, encoding="utf-8")
             result = subprocess.run(command, cwd=root, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, timeout=600)
@@ -43,14 +49,14 @@ def check_backend(root: Path, backend: str, wrapper: Path) -> bool:
                 print(f"{backend}: non-null platform declaration accepted", flush=True)
             else:
                 if result.returncode == 0:
-                    print(f"{backend}: inferred nullable platform declaration compiled successfully; "
+                    print(f"{backend}: {label} compiled successfully; "
                           "compiler policy is missing", file=sys.stderr)
                     return False
-                if MARKER not in result.stdout:
+                if marker not in result.stdout:
                     print(result.stdout)
                     print(f"{backend}: rejecting probe failed for a reason other than the policy", file=sys.stderr)
                     return False
-                print(f"{backend}: inferred nullable platform declaration rejected by policy", flush=True)
+                print(f"{backend}: {label} rejected by policy", flush=True)
         return True
     finally:
         probe.unlink(missing_ok=True)

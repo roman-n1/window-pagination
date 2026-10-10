@@ -24,6 +24,10 @@ class NullSafetyCompilerTest {
             "val item: String? get() = null",
             "val nested: Map<String, List<Int?>> = emptyMap()",
             "val items: List<*> = listOf(1)",
+            "fun text() = mapOf(1 to 2)[0].toString()",
+            "fun use() { println(mapOf(1 to 2)[0]) }",
+            "fun use() { val values = mutableMapOf(1 to 2); values.remove(1) }",
+            "fun item() = mapOf(1 to 2)[0] as Int",
         )
         for (source in cases) {
             val result = compile(source)
@@ -44,6 +48,8 @@ class NullSafetyCompilerTest {
             val item = mapOf(1 to 2).getValue(1)
             val text: String get() = "valid"
             fun use() { val local = identity(1); println(local) }
+            fun printValue() { println(mapOf(1 to 2).getValue(1)) }
+            fun removeKey() { val values = mutableMapOf(1 to 2); values.keys.remove(1) }
         """.trimIndent())
         assertEquals(ExitCode.OK, result.first, result.second)
     }
