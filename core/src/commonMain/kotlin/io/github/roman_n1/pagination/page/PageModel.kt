@@ -26,6 +26,7 @@ data class PageSnapshot<out K : Any, out T : Any>(
     val token: PageToken,
     val source: SourcePage<K, T>,
     val items: ImmutableList<T>,
+    val edits: PageEdits<T> = PageEdits(),
 )
 
 data class PageStoreState<out K : Any, out T : Any>(
@@ -47,4 +48,11 @@ sealed interface PageRejection {
     data class GenerationChanged(val expected: PageGeneration, val actual: PageGeneration) : PageRejection
     data class PageAlreadyLoaded(val pageId: PageId) : PageRejection
     data class DuplicateItems(val ids: ImmutableSet<String>) : PageRejection
+    data class MissingPage(val pageId: PageId) : PageRejection
+    data class RevisionChanged(val expected: PageToken, val actual: PageToken) : PageRejection
+    data class PageIdentityChanged(val expected: PageId, val actual: PageId) : PageRejection
+    data class ItemIdentityChanged(val expected: String, val actual: String) : PageRejection
+    data class UnknownItem(val id: String) : PageRejection
+    data class InvalidOrder(val expected: ImmutableList<String>, val provided: ImmutableList<String>) : PageRejection
+    data class EditsConflict(val cause: PageRejection) : PageRejection
 }
