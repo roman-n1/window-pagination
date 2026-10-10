@@ -18,6 +18,7 @@ class PageStore<K : Any, T : Any>(
     private var nextInstance = 0L
     private val mutableState = MutableStateFlow(PageStoreState<K, T>())
     val state: StateFlow<PageStoreState<K, T>> = mutableState.asStateFlow()
+    val windows: PageWindows<K, T> = PageWindows { state.value }
 
     fun page(id: PageId): PageLookup<K, T> {
         for (page in state.value.pages) {
